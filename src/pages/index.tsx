@@ -113,7 +113,7 @@ const Home = () => {
                             flexDirection: "column",
                         }}
                     >
-                                                <Box sx={{ width: "100%" }}>
+                        <Box sx={{ width: "100%" }}>
                              <ProjectCarousel items={items} resetTrigger={resetCounter} />
                         </Box>
                     </Box>
