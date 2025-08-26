@@ -4,11 +4,15 @@ import Image from "next/image";
 import { useState } from "react";
 import ProjectCarousel from "@/components/ProjectCarousel";
 import { PROJECTS, Category } from "@/data/projects";
+import { useImagePrefetch } from "@/hooks/useImagePrefetch";
 
 const Home = () => {
   const [category, setCategory] = useState<Category>(Category.GENERAL);
   const [resetCounter, setResetCounter] = useState(0);
   const items = PROJECTS[category];
+
+  // Prefetch all images using TanStack Query
+  useImagePrefetch();
 
   const handleFishClick = () => {
     if (category === Category.GENERAL) {
