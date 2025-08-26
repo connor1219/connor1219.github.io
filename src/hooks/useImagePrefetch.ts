@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { PROJECTS, ProjectItem } from "@/data/projects";
 
 // Fixed size for consistent URLs
@@ -7,6 +7,7 @@ const IMAGE_QUALITY = 75;
 
 // Build consistent Next.js Image URL
 const buildImageUrl = (src: string) => {
+  if (typeof window === "undefined") return ""; // SSR guard
   const u = new URL("/_next/image", window.location.origin);
   u.searchParams.set("url", src);
   u.searchParams.set("w", IMAGE_WIDTH.toString());
@@ -34,15 +35,16 @@ export const useImagePrefetch = () => {
     )
   );
 
-  // Prefetch all images using TanStack Query
-  const queries = allImageSrcs.map((src) =>
-    useQuery({
+  // Prefetch all images using TanStack Query useQueries (client-side only)
+  const queries = useQueries({
+    queries: allImageSrcs.map((src) => ({
       queryKey: ["image", src],
       queryFn: () => fetchImageBlob(src),
+      enabled: typeof window !== "undefined", // Only run on client
       staleTime: Infinity, // Images never go stale
       gcTime: 1000 * 60 * 60 * 24, // Keep in cache for 24 hours
-    })
-  );
+    })),
+  });
 
   return {
     isLoading: queries.some(q => q.isLoading),
