@@ -30,8 +30,8 @@ const ProjectInfoCard = ({ imageSrc, title, body, link }: ProjectInfoCardProps) 
                     src={imageSrc}
                     alt={title}
                     fill
+                    priority
                     style={{ objectFit: "cover" }}
-                    priority={false}
                 />
             </Box>
             <Box
