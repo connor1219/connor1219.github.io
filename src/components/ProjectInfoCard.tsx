@@ -31,7 +31,7 @@ const ProjectInfoCard = ({ imageSrc, title, body, link }: ProjectInfoCardProps) 
                     alt={title}
                     fill
                     priority
-                    sizes="(max-width: 768px) 100vw, 800px"
+                    unoptimized
                     style={{ objectFit: "cover" }}
                 />
             </Box>

@@ -1,56 +1,77 @@
-import { useQueries } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { PROJECTS, ProjectItem } from "@/data/projects";
 
-// Fixed size for consistent URLs
-const IMAGE_WIDTH = 800;
-const IMAGE_QUALITY = 75;
-
-// Build consistent Next.js Image URL
-const buildImageUrl = (src: string) => {
-  if (typeof window === "undefined") return ""; // SSR guard
-  const u = new URL("/_next/image", window.location.origin);
-  u.searchParams.set("url", src);
-  u.searchParams.set("w", IMAGE_WIDTH.toString());
-  u.searchParams.set("q", IMAGE_QUALITY.toString());
-  return u.toString();
-};
-
-// Fetch image as blob for caching
-const fetchImageBlob = async (src: string): Promise<Blob> => {
-  const url = buildImageUrl(src);
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch image: ${response.statusText}`);
-  }
-  return response.blob();
+// Warm the HTTP cache AND force decode
+const warmImage = (url: string): Promise<void> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.decoding = 'async';
+    img.loading = 'eager';
+    img.onload = () => {
+      // decode() resolves once the bitmap is decoded
+      if (img.decode) {
+        img.decode().then(() => resolve()).catch(() => resolve());
+      } else {
+        resolve();
+      }
+    };
+    img.onerror = () => resolve(); // Don't fail on errors
+    img.src = url;
+  });
 };
 
 export const useImagePrefetch = () => {
-  // Get all unique image sources
-  const allImageSrcs = Array.from(
-    new Set(
-      Object.values(PROJECTS)
-        .flat()
-        .map((p: ProjectItem) => p.imageSrc)
-    )
-  );
+  const isWarmingRef = useRef(false);
 
-  // Prefetch all images using TanStack Query useQueries (client-side only)
-  const queries = useQueries({
-    queries: allImageSrcs.map((src) => ({
-      queryKey: ["image", src],
-      queryFn: () => fetchImageBlob(src),
-      enabled: typeof window !== "undefined", // Only run on client
-      staleTime: Infinity, // Images never go stale
-      gcTime: 1000 * 60 * 60 * 24, // Keep in cache for 24 hours
-    })),
-  });
+  useEffect(() => {
+    if (typeof window === "undefined" || isWarmingRef.current) return;
+    
+    isWarmingRef.current = true;
 
-  return {
-    isLoading: queries.some(q => q.isLoading),
-    isError: queries.some(q => q.isError),
-    allLoaded: queries.every(q => q.isSuccess),
-  };
+    // Get all unique image sources (unoptimized, direct URLs)
+    const allImageSrcs = Array.from(
+      new Set(
+        Object.values(PROJECTS)
+          .flat()
+          .map((p: ProjectItem) => p.imageSrc)
+      )
+    );
+
+    // Warm all images with requestIdleCallback for non-blocking
+    const warmAll = () => {
+      allImageSrcs.forEach((src, index) => {
+        const delay = index * 50; // Stagger to avoid overwhelming network
+        setTimeout(() => {
+          (window.requestIdleCallback ?? ((cb: any) => setTimeout(cb, 0)))(() => {
+            warmImage(src);
+          });
+        }, delay);
+      });
+    };
+
+    warmAll();
+  }, []);
+
+  return { initialized: true };
 };
 
-export { IMAGE_WIDTH, IMAGE_QUALITY };
+// Hook for warming specific neighbor images in carousel
+export const useCarouselImageWarming = (currentIndex: number, items: { imageSrc: string }[]) => {
+  useEffect(() => {
+    if (typeof window === "undefined" || items.length === 0) return;
+
+    const prevIndex = (currentIndex - 1 + items.length) % items.length;
+    const nextIndex = (currentIndex + 1) % items.length;
+    
+    const neighbors = [
+      items[prevIndex]?.imageSrc,
+      items[nextIndex]?.imageSrc,
+    ].filter(Boolean);
+
+    neighbors.forEach((src) => {
+      (window.requestIdleCallback ?? ((cb: any) => setTimeout(cb, 0)))(() => {
+        warmImage(src);
+      });
+    });
+  }, [currentIndex, items]);
+};
