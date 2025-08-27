@@ -16,6 +16,7 @@ const warmImage = (url: string): Promise<void> => {
       }
     };
     img.onerror = () => resolve(); // Don't fail on errors
+    // Use the exact same URL that will be requested in the component
     img.src = url;
   });
 };

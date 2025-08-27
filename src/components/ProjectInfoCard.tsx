@@ -1,5 +1,4 @@
 import { Box, Link, Typography } from "@mui/material";
-import Image from "next/image";
 
 export type ProjectInfoCardProps = {
   imageSrc: string;
@@ -26,13 +25,19 @@ const ProjectInfoCard = ({ imageSrc, title, body, link }: ProjectInfoCardProps) 
                     overflow: "hidden",
                 }}
             >
-                <Image
+                <img
                     src={imageSrc}
                     alt={title}
-                    fill
-                    priority
-                    unoptimized
-                    style={{ objectFit: "cover" }}
+                    style={{ 
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                    }}
+                    loading="eager"
+                    decoding="async"
                 />
             </Box>
             <Box
