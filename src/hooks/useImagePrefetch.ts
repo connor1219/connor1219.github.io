@@ -43,7 +43,7 @@ export const useImagePrefetch = () => {
       allImageSrcs.forEach((src, index) => {
         const delay = index * 50; // Stagger to avoid overwhelming network
         setTimeout(() => {
-          (window.requestIdleCallback ?? ((cb: any) => setTimeout(cb, 0)))(() => {
+          (window.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 0)))(() => {
             warmImage(src);
           });
         }, delay);
@@ -70,7 +70,7 @@ export const useCarouselImageWarming = (currentIndex: number, items: { imageSrc:
     ].filter(Boolean);
 
     neighbors.forEach((src) => {
-      (window.requestIdleCallback ?? ((cb: any) => setTimeout(cb, 0)))(() => {
+      (window.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 0)))(() => {
         warmImage(src);
       });
     });
